@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriSnap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────
+   RESET & BASE
+───────────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --ink:    #0E0D0A;
+  --paper:  #F2EDE4;
+  --sage:   #3D5C35;
+  --sage-l: #5A8050;
+  --gold:   #C8922A;
+  --rust:   #B84E2A;
+  --blush:  #E8C4A0;
+  --mist:   rgba(14,13,10,0.45);
+  --hairline: rgba(14,13,10,0.1);
+}
+html { scroll-behavior:smooth; font-size:16px; }
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Syne', sans-serif;
+  font-weight: 400;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─────────────────────────────────────────────
+   NAV
+───────────────────────────────────────────── */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:200;
+  padding: 1.5rem 3rem;
+  display: flex; align-items:center; justify-content:space-between;
+  mix-blend-mode: normal;
+}
+nav::before {
+  content:'';
+  position:absolute;inset:0;
+  background: linear-gradient(to bottom, rgba(14,13,10,0.7), transparent);
+  pointer-events:none;
+}
+.nav-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 300; letter-spacing: 0.15em;
+  color: var(--paper); text-transform:uppercase;
+  position:relative; z-index:1;
+}
+.nav-right { display:flex; gap:2.5rem; align-items:center; position:relative; z-index:1; }
+.nav-right a {
+  text-decoration:none; color:rgba(242,237,228,0.6);
+  font-size: 0.72rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase;
+  transition: color .2s;
+}
+.nav-right a:hover { color: var(--paper); }
+.nav-pill {
+  background: var(--paper) !important; color: var(--ink) !important;
+  padding: 0.5rem 1.25rem; border-radius: 100px;
+  font-size: 0.72rem !important; font-weight: 700 !important;
+  transition: background .2s !important;
+}
+.nav-pill:hover { background: var(--blush) !important; }
+
+/* ─────────────────────────────────────────────
+   HERO
+───────────────────────────────────────────── */
+.hero {
+  height: 100vh; min-height: 700px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+  overflow: hidden;
+}
+
+/* LEFT — dark bg with centered bowl */
+.hero-image-col {
+  position: relative;
+  overflow: hidden;
+  background: #0A0C07;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Subtle radial glow behind bowl */
+.hero-image-col::before {
+  content:'';
+  position:absolute;
+  width:420px; height:420px;
+  border-radius:50%;
+  background: radial-gradient(circle, rgba(61,92,53,0.25) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
+}
+
+/* The centered bowl — circular, prominent */
+.bowl-stage {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bowl-circle-wrap {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(200,146,42,0.1),
+    0 0 0 12px rgba(10,12,7,0.8),
+    0 0 0 13px rgba(200,146,42,0.08),
+    0 32px 80px rgba(0,0,0,0.7);
+  flex-shrink: 0;
+}
+
+.bowl-circle-wrap img {
+  width:100%; height:100%;
+  object-fit:cover; object-position:center;
+  display:block;
+  transition: transform 8s ease;
+}
+.bowl-circle-wrap img.zoomed { transform: scale(1.08); }
+
+/* Scan ring around bowl */
+.bowl-scan-ring {
+  position:absolute;
+  border-radius:50%;
+  pointer-events:none;
+  opacity:0;
+  transition: opacity .5s;
+}
+.bowl-scan-ring.r1 {
+  inset:-16px;
+  border: 1.5px solid rgba(200,146,42,0.7);
+  animation: spinBowl 7s linear infinite;
+}
+.bowl-scan-ring.r2 {
+  inset:-30px;
+  border: 0.5px dashed rgba(200,146,42,0.25);
+  animation: spinBowl 14s linear infinite reverse;
+}
+.bowl-scan-ring.active { opacity:1; }
+@keyframes spinBowl { to { transform: rotate(360deg); } }
+
+/* Gold dot on ring */
+.bowl-scan-ring.r1::after {
+  content:'';
+  position:absolute; top:-5px; left:50%; transform:translateX(-50%);
+  width:8px; height:8px;
+  background:var(--gold); border-radius:50%;
+  box-shadow: 0 0 10px var(--gold), 0 0 20px rgba(200,146,42,0.4);
+}
+
+/* Sweep line clipped to bowl */
+.bowl-sweep-wrap {
+  position:absolute; inset:0;
+  border-radius:50%; overflow:hidden;
+  pointer-events:none; opacity:0; transition:opacity .4s; z-index:3;
+}
+.bowl-sweep-wrap.active { opacity:1; }
+.bowl-sweep-line {
+  position:absolute; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, transparent, rgba(200,146,42,0.9) 50%, transparent);
+  box-shadow: 0 0 12px rgba(200,146,42,0.5);
+  animation: bowlSweep 2s linear infinite;
+}
+@keyframes bowlSweep { 0%{top:0%} 100%{top:100%} }
+
+/* Layer scan lines — horizontal bands that light up */
+.bowl-layer-scan {
+  position:absolute; inset:0;
+  border-radius:50%; overflow:hidden;
+  pointer-events:none; opacity:0; transition:opacity .5s; z-index:2;
+}
+.bowl-layer-scan.active { opacity:1; }
+.layer-band {
+  position:absolute; left:0; right:0;
+  opacity:0; transition:opacity .5s;
+}
+.layer-band.lit { opacity:1; }
+
+/* Ingredient tags — stacked right of bowl */
+.bowl-tags {
+  position:absolute;
+  left: calc(100% + 18px);
+  top:50%; transform:translateY(-50%);
+  display:flex; flex-direction:column; gap:.45rem;
+  pointer-events:none; z-index:10;
+  width: 170px;
+}
+.ingredient-tag {
+  display:flex; align-items:center; gap:8px;
+  background: rgba(10,12,7,0.88);
+  backdrop-filter: blur(14px);
+  border: 0.5px solid rgba(200,146,42,0.25);
+  border-radius: 5px; padding:.35rem .8rem;
+  white-space:nowrap;
+  opacity:0; transform:translateX(-8px);
+  transition: opacity .4s, transform .4s;
+}
+.ingredient-tag.show { opacity:1; transform:none; }
+.itag-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.itag-text { display:flex; flex-direction:column; gap:1px; }
+.itag-name { font-size:.64rem; font-weight:600; letter-spacing:.03em; color:var(--paper); }
+.itag-cal { font-size:.57rem; color:rgba(200,146,42,0.85); }
+
+/* Scan image overlay — darkens non-scanned area */
+.bowl-scan-overlay {
+  position:absolute; inset:0; border-radius:50%;
+  pointer-events:none; z-index:1; opacity:0; transition:opacity .5s;
+}
+.bowl-scan-overlay.active { opacity:1; }
+
+/* RIGHT — text */
+.hero-text-col {
+  display:flex; flex-direction:column;
+  justify-content:center;
+  padding: 8rem 4rem 6rem 5rem;
+  position:relative;
+  background: var(--ink);
+}
+
+/* Vertical rule between columns */
+.hero-text-col::before {
+  content:'';
+  position:absolute; left:0; top:15%; bottom:15%;
+  width:0.5px;
+  background: linear-gradient(to bottom, transparent, rgba(242,237,228,0.12), transparent);
+}
+
+.hero-eyebrow {
+  display:flex; align-items:center; gap:10px;
+  margin-bottom: 2rem;
+  animation: fadeUp .6s ease both;
+}
+.eyebrow-line { width:32px; height:0.5px; background:var(--gold); }
+.eyebrow-text {
+  font-size:.65rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color: var(--gold);
+}
+
+.hero-h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(3.2rem, 5vw, 5rem);
+  font-weight: 300; line-height: 1.0; letter-spacing:-.01em;
+  color: var(--paper);
+  margin-bottom: 2rem;
+  animation: fadeUp .6s .08s ease both;
+}
+.hero-h1 em { font-style:italic; color:var(--gold); font-weight:300; }
+.hero-h1 strong { font-weight:600; }
+
+.hero-body {
+  font-size:.9rem; line-height:1.8; color:rgba(242,237,228,0.55);
+  max-width: 340px; margin-bottom: 2.5rem;
+  animation: fadeUp .6s .16s ease both;
+}
+
+/* Stats row */
+.hero-stats {
+  display:flex; gap:2rem; margin-bottom:2.5rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 0.5px solid var(--hairline);
+  animation: fadeUp .6s .22s ease both;
+}
+.stat-num {
+  font-family:'Cormorant Garamond',serif;
+  font-size:2rem; font-weight:300; color:var(--paper); line-height:1;
+  display:block;
+}
+.stat-label { font-size:.6rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:rgba(242,237,228,0.4); margin-top:.25rem; display:block; }
+
+.hero-cta {
+  display:flex; gap:1rem; align-items:center;
+  animation: fadeUp .6s .28s ease both;
+}
+.btn-main {
+  background: var(--gold); color: var(--ink);
+  padding: .8rem 2rem; border-radius:3px;
+  font-family:'Syne',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  text-decoration:none; transition: background .2s, transform .15s;
+  display:inline-flex; align-items:center; gap:8px;
+}
+.btn-main:hover { background:var(--blush); transform:translateY(-1px); }
+.btn-text {
+  font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+  color:rgba(242,237,228,0.4); text-decoration:none; transition:color .2s;
+}
+.btn-text:hover { color:var(--paper); }
+
+
+
+/* ─────────────────────────────────────────────
+   EXPLODE VIEW (replaces hero when active)
+───────────────────────────────────────────── */
+.explode-panel {
+  position:absolute; inset:0; z-index:50;
+  background: var(--ink);
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items:center;
+  gap:0;
+  opacity:0; pointer-events:none;
+  transition: opacity .5s ease;
+  padding: 0 4rem;
+}
+.explode-panel.active { opacity:1; pointer-events:all; }
+
+/* Left — spacer for layer label info */
+.explode-left-info {
+  display:flex; flex-direction:column; gap:0;
+  align-items:flex-end;
+  padding-right:1.5rem;
+}
+
+/* Layer stack — center column */
+.layer-stack {
+  display:flex; flex-direction:column; align-items:stretch;
+  width:280px; gap:0;
+  position:relative;
+}
+
+.fl {
+  position:relative;
+  height:50px;
+  display:flex; align-items:center;
+  transition: transform .8s cubic-bezier(.34,1.4,.64,1), opacity .5s;
+  cursor:default;
+  margin-bottom:1px;
+}
+
+.fl-slab {
+  flex:1; height:100%;
+  border-radius:3px;
+  display:flex; align-items:center; padding:0 1rem;
+  position:relative; overflow:hidden;
+}
+.fl-slab::after {
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom,rgba(255,255,255,0.12) 0%,transparent 50%,rgba(0,0,0,0.15) 100%);
+}
+.fl-slab-name {
+  position:relative; z-index:1;
+  font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:rgba(255,255,255,0.9); text-shadow:0 1px 4px rgba(0,0,0,0.4);
+}
+
+/* Layer info — now lives in left column, not absolute */
+.fl-info {
+  display:flex; flex-direction:column; gap:2px;
+  text-align:right;
+  height:51px;
+  justify-content:center;
+  padding-right:.5rem;
+  opacity:0; transform:translateX(8px);
+  transition: opacity .5s, transform .5s;
+}
+.fl-info.show { opacity:1; transform:none; }
+.fl-info-cal { font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:300; color:var(--gold); line-height:1; }
+.fl-info-name { font-size:.58rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--paper); }
+.fl-info-macro { font-size:.58rem; color:rgba(242,237,228,0.38); line-height:1.4; }
+
+/* Connector line from info to slab */
+.fl-connector {
+  width:20px; height:0.5px;
+  background:rgba(242,237,228,0.1);
+  align-self:center;
+  flex-shrink:0;
+  opacity:0; transition:opacity .5s;
+}
+.fl-connector.show { opacity:1; }
+
+/* Bowl CSS base */
+.bowl-base-css {
+  width:280px; height:20px; margin-top:1px;
+  background:linear-gradient(to bottom,#C8C0B0,#A0988A);
+  border-radius:0 0 140px 140px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+}
+.bowl-rim-css {
+  width:100%; height:10px;
+  background:linear-gradient(to bottom,#E0D8C8,#C0B8A8);
+  border-radius:50%;
+}
+
+/* Right — calorie breakdown */
+.explode-right {
+  display:flex; flex-direction:column; gap:1.25rem;
+  padding-left:2.5rem;
+  border-left:0.5px solid var(--hairline);
+}
+.exp-title { font-family:'Cormorant Garamond',serif; font-size:2.5rem; font-weight:300; color:var(--paper); line-height:1; }
+.exp-title span { font-style:italic; color:var(--gold); }
+.exp-subtitle { font-size:.62rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(242,237,228,0.35); }
+.macro-bars { display:flex; flex-direction:column; gap:.75rem; margin-top:.5rem; }
+.macro-row { display:flex; flex-direction:column; gap:.35rem; }
+.macro-label-row { display:flex; justify-content:space-between; align-items:center; }
+.macro-name { font-size:.6rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(242,237,228,0.45); }
+.macro-val { font-size:.6rem; font-weight:600; color:var(--paper); }
+.macro-track { height:2px; background:rgba(242,237,228,0.08); border-radius:1px; overflow:hidden; }
+.macro-fill { height:100%; border-radius:1px; transition:width 1.2s ease; width:0; }
+
+.exp-vs {
+  padding:.75rem 1rem;
+  border:0.5px solid rgba(184,78,42,0.25);
+  border-radius:4px;
+  background:rgba(184,78,42,0.06);
+}
+.exp-vs-label { font-size:.58rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(184,78,42,0.7); margin-bottom:.35rem; }
+.exp-vs-nums { display:flex; align-items:baseline; gap:.5rem; }
+.exp-vs-bad { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:300; color:rgba(184,78,42,0.7); text-decoration:line-through; }
+.exp-vs-good { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:600; color:var(--paper); }
+.exp-vs-unit { font-size:.6rem; color:rgba(242,237,228,0.4); }
+
+/* ─────────────────────────────────────────────
+   MARQUEE STRIP
+───────────────────────────────────────────── */
+.marquee-strip {
+  border-top:0.5px solid var(--hairline);
+  border-bottom:0.5px solid var(--hairline);
+  padding:.9rem 0; overflow:hidden;
+  background: rgba(242,237,228,0.02);
+}
+.marquee-track {
+  display:flex; gap:3rem; width:max-content;
+  animation: marquee 20s linear infinite;
+}
+.marquee-track:hover { animation-play-state:paused; }
+@keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.marquee-item {
+  display:flex; align-items:center; gap:.6rem; white-space:nowrap;
+  font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:rgba(242,237,228,0.3);
+}
+.marquee-item .dot { width:4px; height:4px; background:var(--gold); border-radius:50%; }
+
+/* ─────────────────────────────────────────────
+   ACCURACY SECTION
+───────────────────────────────────────────── */
+.acc-section {
+  display:grid; grid-template-columns:1fr 1fr;
+  min-height:80vh;
+  border-top:0.5px solid var(--hairline);
+}
+.acc-left {
+  padding:7rem 5rem 7rem 6rem;
+  border-right:0.5px solid var(--hairline);
+  display:flex; flex-direction:column; justify-content:center;
+}
+.section-eyebrow {
+  display:flex; align-items:center; gap:10px; margin-bottom:2rem;
+}
+.section-line { width:24px; height:0.5px; background:var(--gold); }
+.section-tag { font-size:.62rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); }
+.acc-h2 {
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(2.5rem,4vw,4rem); font-weight:300; line-height:1.1; letter-spacing:-.01em;
+  color:var(--paper); margin-bottom:1.5rem;
+}
+.acc-h2 em { font-style:italic; color:var(--gold); }
+.acc-body { font-size:.875rem; line-height:1.85; color:rgba(242,237,228,0.5); max-width:380px; margin-bottom:2.5rem; }
+
+/* Visual comparison */
+.compare-visual { display:flex; flex-direction:column; gap:.5rem; }
+.cv-row { display:flex; align-items:center; gap:1rem; }
+.cv-label { font-size:.6rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; width:80px; flex-shrink:0; }
+.cv-label.bad { color:rgba(184,78,42,0.6); }
+.cv-label.good { color:var(--gold); }
+.cv-bar-wrap { flex:1; height:36px; border-radius:3px; overflow:hidden; position:relative; }
+.cv-bar { height:100%; border-radius:3px; display:flex; align-items:center; padding:0 1rem; position:relative; transition:width 1.4s cubic-bezier(.16,1,.3,1); }
+.cv-bar-bad { background:rgba(184,78,42,0.2); border:0.5px solid rgba(184,78,42,0.25); width:0%; }
+.cv-bar-good { background:rgba(200,146,42,0.15); border:0.5px solid rgba(200,146,42,0.3); width:0%; }
+.cv-bar-num { font-family:'Cormorant Garamond',serif; font-size:1.2rem; font-weight:300; color:var(--paper); }
+.cv-bar-bad .cv-bar-num { color:rgba(184,78,42,0.7); }
+.cv-note { font-size:.62rem; color:rgba(242,237,228,0.3); margin-top:.25rem; }
+
+.acc-right {
+  padding:7rem 6rem 7rem 5rem;
+  display:flex; flex-direction:column; justify-content:center; gap:3rem;
+}
+
+/* How it works steps */
+.step { display:flex; gap:1.5rem; align-items:flex-start; }
+.step-num {
+  font-family:'Cormorant Garamond',serif; font-size:3rem; font-weight:300; line-height:1;
+  color:rgba(242,237,228,0.06); flex-shrink:0; width:48px; text-align:right;
+}
+.step-content {}
+.step-title { font-size:.78rem; font-weight:700; letter-spacing:.06em; color:var(--paper); margin-bottom:.4rem; }
+.step-body { font-size:.82rem; line-height:1.75; color:rgba(242,237,228,0.4); }
+.step + .step { padding-top:2.5rem; border-top:0.5px solid var(--hairline); }
+
+/* ─────────────────────────────────────────────
+   VOICE SECTION
+───────────────────────────────────────────── */
+.voice-section {
+  border-top:0.5px solid var(--hairline);
+  background: rgba(242,237,228,0.015);
+}
+.voice-inner {
+  display:grid; grid-template-columns:1fr 1fr;
+  min-height:80vh; align-items:center;
+  max-width:1400px; margin:0 auto;
+  padding:0 6rem; gap:6rem;
+}
+.voice-left { padding:7rem 0; }
+.voice-chips {
+  display:flex; flex-wrap:wrap; gap:.5rem; margin-top:2rem;
+}
+.voice-chip {
+  padding:.45rem 1rem;
+  border:0.5px solid rgba(242,237,228,0.12);
+  border-radius:100px;
+  font-size:.68rem; font-weight:500; letter-spacing:.02em;
+  color:rgba(242,237,228,0.45);
+  font-style:italic;
+}
+
+/* Phone mockup */
+.voice-right { display:flex; justify-content:center; align-items:center; padding:4rem 0; }
+.voice-phone {
+  width:280px;
+  background:#141410;
+  border-radius:32px;
+  border:0.5px solid rgba(242,237,228,0.1);
+  overflow:hidden;
+  box-shadow:0 40px 80px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(242,237,228,0.05);
+}
+.vp-top {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:.75rem 1.2rem .5rem;
+}
+.vp-logo { font-family:'Cormorant Garamond',serif; font-size:.9rem; font-weight:300; letter-spacing:.1em; color:rgba(242,237,228,0.6); text-transform:uppercase; }
+.vp-time { font-size:.7rem; color:rgba(242,237,228,0.35); }
+.vp-photo-stub { height:160px; position:relative; overflow:hidden; }
+.vp-detected {
+  position:absolute; bottom:0; left:0; right:0;
+  padding:.75rem 1rem;
+}
+.vp-det-label { font-size:.55rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); margin-bottom:.35rem; }
+.vp-det-items { display:flex; gap:.35rem; flex-wrap:wrap; }
+.vp-item { font-size:.58rem; font-weight:600; color:rgba(242,237,228,0.7); background:rgba(242,237,228,0.08); border:0.5px solid rgba(242,237,228,0.12); padding:.18rem .5rem; border-radius:3px; }
+
+.vp-voice-area { padding:1rem 1.2rem 1.25rem; }
+.vp-ai-bubble {
+  background:rgba(200,146,42,0.1); border:0.5px solid rgba(200,146,42,0.2);
+  border-radius:10px 10px 10px 3px; padding:.65rem .85rem; margin-bottom:.875rem;
+}
+.vp-bubble-label { font-size:.52rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); margin-bottom:.3rem; }
+.vp-bubble-text { font-size:.7rem; color:rgba(242,237,228,0.8); line-height:1.55; }
+
+.vp-mic-area { display:flex; flex-direction:column; align-items:center; gap:.6rem; }
+.vp-waveform { display:flex; align-items:center; gap:3px; height:28px; }
+.wave-bar {
+  width:3px; background:var(--gold); border-radius:2px;
+  animation:wavePulse 1s ease-in-out infinite;
+  opacity:0.7;
+}
+@keyframes wavePulse {
+  0%,100%{height:4px;opacity:0.4}
+  50%{height:22px;opacity:0.9}
+}
+.vp-hold { font-size:.58rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:rgba(242,237,228,0.25); }
+
+.vp-confirm { padding:1rem 1.2rem 1.25rem; }
+.vp-confirm-label { font-size:.6rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(242,237,228,0.4); margin-bottom:.6rem; }
+.vp-confirm-items { display:flex; flex-direction:column; gap:.3rem; margin-bottom:.75rem; }
+.vp-ci { font-size:.68rem; color:rgba(242,237,228,0.7); display:flex; justify-content:space-between; }
+.vp-ci span { color:var(--gold); }
+.vp-total { font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:300; color:var(--paper); margin-bottom:.875rem; }
+.vp-confirm-btns { display:flex; gap:.5rem; }
+.vp-btn-yes { flex:1; background:var(--gold); color:var(--ink); border:none; border-radius:4px; padding:.5rem; font-family:'Syne',sans-serif; font-size:.62rem; font-weight:700; letter-spacing:.06em; cursor:pointer; }
+.vp-btn-no { background:transparent; color:rgba(242,237,228,0.35); border:0.5px solid rgba(242,237,228,0.12); border-radius:4px; padding:.5rem .75rem; font-family:'Syne',sans-serif; font-size:.62rem; cursor:pointer; }
+
+/* ─────────────────────────────────────────────
+   FEATURE GRID
+───────────────────────────────────────────── */
+.feat-section { padding:8rem 6rem; border-top:0.5px solid var(--hairline); }
+.feat-header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5rem; }
+.feat-h2 { font-family:'Cormorant Garamond',serif; font-size:clamp(2.5rem,4vw,4rem); font-weight:300; line-height:1.1; color:var(--paper); max-width:500px; }
+.feat-h2 em { font-style:italic; color:var(--gold); }
+.feat-header-sub { font-size:.82rem; line-height:1.75; color:rgba(242,237,228,0.4); max-width:280px; text-align:right; }
+
+.feat-grid { display:grid; grid-template-columns:repeat(3,1fr); border:0.5px solid var(--hairline); }
+.feat-cell {
+  padding:2.5rem 2rem;
+  border-right:0.5px solid var(--hairline);
+  border-bottom:0.5px solid var(--hairline);
+  transition:background .2s;
+}
+.feat-cell:nth-child(3n) { border-right:none; }
+.feat-cell:nth-child(n+4) { border-bottom:none; }
+.feat-cell:hover { background:rgba(242,237,228,0.025); }
+
+.feat-icon-wrap {
+  width:36px; height:36px;
+  border:0.5px solid var(--hairline);
+  border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem; margin-bottom:1.5rem;
+}
+.feat-title { font-size:.75rem; font-weight:700; letter-spacing:.06em; color:var(--paper); margin-bottom:.6rem; }
+.feat-body { font-size:.8rem; line-height:1.75; color:rgba(242,237,228,0.38); }
+
+/* ─────────────────────────────────────────────
+   CTA SECTION
+───────────────────────────────────────────── */
+.cta-section {
+  border-top:0.5px solid var(--hairline);
+  display:grid; grid-template-columns:1fr 1fr; min-height:50vh;
+}
+.cta-left {
+  background:var(--gold);
+  padding:6rem;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.cta-left-h { font-family:'Cormorant Garamond',serif; font-size:clamp(2.5rem,4vw,4rem); font-weight:300; line-height:1.1; color:var(--ink); margin-bottom:.75rem; }
+.cta-left-h em { font-style:italic; }
+.cta-left-sub { font-size:.8rem; color:rgba(14,13,10,0.6); line-height:1.7; }
+.cta-right {
+  padding:6rem;
+  display:flex; flex-direction:column; justify-content:center; gap:1.5rem;
+  background: rgba(242,237,228,0.02);
+}
+.cta-label { font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(242,237,228,0.35); }
+.cta-input-row { display:flex; gap:.75rem; }
+.cta-input {
+  flex:1; padding:.85rem 1.2rem;
+  background:rgba(242,237,228,0.05); border:0.5px solid rgba(242,237,228,0.12);
+  border-radius:3px; color:var(--paper);
+  font-family:'Syne',sans-serif; font-size:.82rem; outline:none;
+  transition:border-color .2s;
+}
+.cta-input::placeholder { color:rgba(242,237,228,0.25); }
+.cta-input:focus { border-color:var(--gold); }
+.btn-submit {
+  background:var(--gold); color:var(--ink);
+  padding:.85rem 1.75rem; border-radius:3px; border:none;
+  font-family:'Syne',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  cursor:pointer; transition:background .2s; white-space:nowrap;
+}
+.btn-submit:hover { background:var(--blush); }
+.cta-note { font-size:.62rem; color:rgba(242,237,228,0.25); line-height:1.6; }
+
+/* ─────────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────────── */
+footer {
+  border-top:0.5px solid var(--hairline);
+  padding:2rem 6rem;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.f-logo { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:300; letter-spacing:.15em; text-transform:uppercase; color:rgba(242,237,228,0.3); }
+.f-links { display:flex; gap:2.5rem; }
+.f-links a { font-size:.6rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(242,237,228,0.2); text-decoration:none; transition:color .2s; }
+.f-links a:hover { color:var(--paper); }
+.f-copy { font-size:.6rem; color:rgba(242,237,228,0.15); letter-spacing:.08em; }
+
+/* ─────────────────────────────────────────────
+   ANIMATIONS
+───────────────────────────────────────────── */
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+.reveal { opacity:0; transform:translateY(24px); transition:opacity .7s ease, transform .7s ease; }
+.reveal.up { opacity:1; transform:none; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">NutriSnap</div>
+  <div class="nav-right">
+    <a href="#accuracy">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#cta" class="nav-pill">Early access</a>
+  </div>
+</nav>
+
+<!-- ══ HERO ════════════════════════════════════════════ -->
+<section class="hero" id="hero">
+
+  <!-- LEFT — centered bowl with scan UI -->
+  <div class="hero-image-col">
+    <div class="bowl-stage">
+
+      <!-- Bowl image centered -->
+      <div class="bowl-circle-wrap" id="bowlCircle">
+        <img id="heroImg"
+          src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=700&q=90&auto=format&fit=crop"
+          alt="Buddha bowl"
+          onload="this.classList.add('loaded')"
+        />
+        <!-- Sweep line clipped to bowl shape -->
+        <div class="bowl-sweep-wrap" id="sweepWrap">
+          <div class="bowl-sweep-line"></div>
+        </div>
+        <!-- Layer highlight bands -->
+        <div class="bowl-layer-scan" id="layerScan">
+          <div class="layer-band" id="lb0" style="top:15%;height:18%;background:linear-gradient(to bottom,transparent,rgba(168,213,162,0.18),transparent)"></div>
+          <div class="layer-band" id="lb1" style="top:30%;height:18%;background:linear-gradient(to bottom,transparent,rgba(200,146,42,0.18),transparent)"></div>
+          <div class="layer-band" id="lb2" style="top:45%;height:18%;background:linear-gradient(to bottom,transparent,rgba(212,98,42,0.18),transparent)"></div>
+          <div class="layer-band" id="lb3" style="top:60%;height:18%;background:linear-gradient(to bottom,transparent,rgba(192,48,48,0.18),transparent)"></div>
+          <div class="layer-band" id="lb4" style="top:72%;height:16%;background:linear-gradient(to bottom,transparent,rgba(200,184,32,0.18),transparent)"></div>
+        </div>
+      </div>
+
+      <!-- Spinning scan rings around bowl -->
+      <div class="bowl-scan-ring r1" id="scanRing1"></div>
+      <div class="bowl-scan-ring r2" id="scanRing2"></div>
+
+      <!-- Ingredient tags — to the right of bowl -->
+      <div class="bowl-tags" id="bowlTags">
+        <div class="ingredient-tag" id="it0">
+          <div class="itag-dot" style="background:#5A9850"></div>
+          <div class="itag-text"><div class="itag-name">Baby spinach</div><div class="itag-cal">7 cal detected</div></div>
+        </div>
+        <div class="ingredient-tag" id="it1">
+          <div class="itag-dot" style="background:#C8913C"></div>
+          <div class="itag-text"><div class="itag-name">Brown rice</div><div class="itag-cal">218 cal detected</div></div>
+        </div>
+        <div class="ingredient-tag" id="it2">
+          <div class="itag-dot" style="background:#D4622A"></div>
+          <div class="itag-text"><div class="itag-name">Chickpeas</div><div class="itag-cal">134 cal detected</div></div>
+        </div>
+        <div class="ingredient-tag" id="it3">
+          <div class="itag-dot" style="background:#C03030"></div>
+          <div class="itag-text"><div class="itag-name">Tomatoes</div><div class="itag-cal">22 cal detected</div></div>
+        </div>
+        <div class="ingredient-tag" id="it4">
+          <div class="itag-dot" style="background:#C8B820"></div>
+          <div class="itag-text"><div class="itag-name">Tahini drizzle</div><div class="itag-cal">89 cal detected</div></div>
+        </div>
+        <div class="ingredient-tag" id="itTotal" style="border-color:rgba(200,146,42,0.5);background:rgba(200,146,42,0.1);margin-top:.15rem">
+          <div class="itag-dot" style="background:var(--gold)"></div>
+          <div class="itag-text">
+            <div class="itag-name" style="color:var(--gold)">Total — 470 cal</div>
+            <div class="itag-cal">vs 266 cal other apps</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT — text -->
+  <div class="hero-text-col">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">AI-powered food accuracy</div>
+    </div>
+    <h1 class="hero-h1">
+      See every<br>
+      <em>layer</em> of<br>
+      <strong>what you eat</strong>
+    </h1>
+    <p class="hero-body">
+      Other apps photograph the surface and guess. NutriSnap scans every ingredient — visible or hidden — using photo, voice, and AI that actually asks.
+    </p>
+    <div class="hero-stats">
+      <div>
+        <span class="stat-num">204</span>
+        <span class="stat-label">Missing calories avg</span>
+      </div>
+      <div>
+        <span class="stat-num">5×</span>
+        <span class="stat-label">More accurate</span>
+      </div>
+      <div>
+        <span class="stat-num">< 10s</span>
+        <span class="stat-label">Per meal log</span>
+      </div>
+    </div>
+    <div class="hero-cta">
+      <a href="#cta" class="btn-main">
+        Start free
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6h8M6 2l4 4-4 4"/></svg>
+      </a>
+      <a href="#accuracy" class="btn-text">See how →</a>
+    </div>
+  </div>
+
+  <!-- Explode overlay — 3 columns: [layer info | slabs | macros] -->
+  <div class="explode-panel" id="explodePanel">
+
+    <!-- Left: per-layer info (aligned to each slab row) -->
+    <div class="explode-left-info" id="explodeLeftInfo">
+      <div class="fl-info" id="fi4"><div class="fl-info-cal">89</div><div class="fl-info-name">Tahini drizzle</div><div class="fl-info-macro">8g fat · calcium</div></div>
+      <div class="fl-connector" id="fc4"></div>
+      <div class="fl-info" id="fi3"><div class="fl-info-cal">22</div><div class="fl-info-name">Cherry tomatoes</div><div class="fl-info-macro">Vit C & K · lycopene</div></div>
+      <div class="fl-connector" id="fc3"></div>
+      <div class="fl-info" id="fi2"><div class="fl-info-cal">134</div><div class="fl-info-name">Roasted chickpeas</div><div class="fl-info-macro">7g protein · iron</div></div>
+      <div class="fl-connector" id="fc2"></div>
+      <div class="fl-info" id="fi1"><div class="fl-info-cal">218</div><div class="fl-info-name">Brown rice</div><div class="fl-info-macro">5g protein · 45g carbs</div></div>
+      <div class="fl-connector" id="fc1"></div>
+      <div class="fl-info" id="fi0"><div class="fl-info-cal">7</div><div class="fl-info-name">Baby spinach</div><div class="fl-info-macro">Iron · folate · vit A</div></div>
+      <div style="height:22px"></div><!-- spacer for bowl base -->
+    </div>
+
+    <!-- Center: stacked slabs -->
+    <div>
+      <div class="layer-stack" id="layerStack">
+        <div class="fl" id="fl4" style="transition-delay:.0s">
+          <div class="fl-slab" style="background:linear-gradient(135deg,#B09818,#D4B030);height:26px"><span class="fl-slab-name">Tahini drizzle</span></div>
+        </div>
+        <div class="fl" id="fl3" style="transition-delay:.06s;margin-top:1px">
+          <div class="fl-slab" style="background:linear-gradient(135deg,#902018,#C03030);height:32px"><span class="fl-slab-name">Cherry tomatoes</span></div>
+        </div>
+        <div class="fl" id="fl2" style="transition-delay:.12s;margin-top:1px">
+          <div class="fl-slab" style="background:linear-gradient(135deg,#903A18,#C05028);height:42px"><span class="fl-slab-name">Roasted chickpeas</span></div>
+        </div>
+        <div class="fl" id="fl1" style="transition-delay:.18s;margin-top:1px">
+          <div class="fl-slab" style="background:linear-gradient(135deg,#806020,#B08030);height:50px"><span class="fl-slab-name">Brown rice base</span></div>
+        </div>
+        <div class="fl" id="fl0" style="transition-delay:.24s;margin-top:1px">
+          <div class="fl-slab" style="background:linear-gradient(135deg,#2A5E28,#4A8040);height:42px"><span class="fl-slab-name">Baby spinach</span></div>
+        </div>
+        <div style="margin-top:1px;display:flex;flex-direction:column;align-items:center;width:100%">
+          <div class="bowl-rim-css"></div>
+          <div class="bowl-base-css"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: total + macro bars -->
+    <div class="explode-right">
+      <div>
+        <div class="exp-title">470<span> cal</span></div>
+        <div class="exp-subtitle">Complete breakdown</div>
+      </div>
+      <div class="macro-bars">
+        <div class="macro-row">
+          <div class="macro-label-row"><span class="macro-name">Protein</span><span class="macro-val">19g</span></div>
+          <div class="macro-track"><div class="macro-fill" id="mf0" style="background:#5A9850;width:0%"></div></div>
+        </div>
+        <div class="macro-row">
+          <div class="macro-label-row"><span class="macro-name">Carbs</span><span class="macro-val">72g</span></div>
+          <div class="macro-track"><div class="macro-fill" id="mf1" style="background:#C8913C;width:0%"></div></div>
+        </div>
+        <div class="macro-row">
+          <div class="macro-label-row"><span class="macro-name">Healthy fat</span><span class="macro-val">11g</span></div>
+          <div class="macro-track"><div class="macro-fill" id="mf2" style="background:#C8B820;width:0%"></div></div>
+        </div>
+        <div class="macro-row">
+          <div class="macro-label-row"><span class="macro-name">Fibre</span><span class="macro-val">9g</span></div>
+          <div class="macro-track"><div class="macro-fill" id="mf3" style="background:#3D5C35;width:0%"></div></div>
+        </div>
+      </div>
+      <div class="exp-vs">
+        <div class="exp-vs-label">Other apps miss</div>
+        <div class="exp-vs-nums">
+          <span class="exp-vs-bad">266</span>
+          <span class="exp-vs-good">470</span>
+          <span class="exp-vs-unit">cal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip">
+  <div class="marquee-track">
+    <div class="marquee-item"><span class="dot"></span>Photo detection</div>
+    <div class="marquee-item"><span class="dot"></span>Voice logging</div>
+    <div class="marquee-item"><span class="dot"></span>Layer scanning</div>
+    <div class="marquee-item"><span class="dot"></span>Restaurant lookup</div>
+    <div class="marquee-item"><span class="dot"></span>Nightly review</div>
+    <div class="marquee-item"><span class="dot"></span>Apple Watch sync</div>
+    <div class="marquee-item"><span class="dot"></span>Whoop integration</div>
+    <div class="marquee-item"><span class="dot"></span>Nutrition coach</div>
+    <div class="marquee-item"><span class="dot"></span>Photo detection</div>
+    <div class="marquee-item"><span class="dot"></span>Voice logging</div>
+    <div class="marquee-item"><span class="dot"></span>Layer scanning</div>
+    <div class="marquee-item"><span class="dot"></span>Restaurant lookup</div>
+    <div class="marquee-item"><span class="dot"></span>Nightly review</div>
+    <div class="marquee-item"><span class="dot"></span>Apple Watch sync</div>
+    <div class="marquee-item"><span class="dot"></span>Whoop integration</div>
+    <div class="marquee-item"><span class="dot"></span>Nutrition coach</div>
+  </div>
+</div>
+
+<!-- ACCURACY -->
+<section class="acc-section" id="accuracy">
+  <div class="acc-left">
+    <div class="section-eyebrow reveal">
+      <div class="section-line"></div>
+      <div class="section-tag">The accuracy problem</div>
+    </div>
+    <h2 class="acc-h2 reveal">A camera only<br>sees the <em>surface</em></h2>
+    <p class="acc-body reveal">Every other app photographs your plate and makes a single guess. The rice hidden under everything? Gone. The tahini soaked in? Invisible. That's 200+ missing calories — every single meal, compounding every single day.</p>
+
+    <div class="compare-visual reveal">
+      <div class="cv-row">
+        <div class="cv-label bad">Other apps</div>
+        <div class="cv-bar-wrap">
+          <div class="cv-bar cv-bar-bad" id="barBad" style="width:0%">
+            <span class="cv-bar-num">266 cal</span>
+          </div>
+        </div>
+      </div>
+      <div class="cv-note">Only sees visible surface ingredients</div>
+      <div style="height:1rem"></div>
+      <div class="cv-row">
+        <div class="cv-label good">NutriSnap</div>
+        <div class="cv-bar-wrap">
+          <div class="cv-bar cv-bar-good" id="barGood" style="width:0%">
+            <span class="cv-bar-num">470 cal</span>
+          </div>
+        </div>
+      </div>
+      <div class="cv-note">All 5 layers identified and counted</div>
+    </div>
+  </div>
+
+  <div class="acc-right">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <div class="step-title">Photograph your plate</div>
+        <div class="step-body">AI instantly identifies every visible ingredient — what it is, how it's cooked, approximate portion size — in under two seconds.</div>
+      </div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <div class="step-title">Describe what's underneath</div>
+        <div class="step-body">Hold and speak. "There's rice under everything and tahini mixed in." NutriSnap adds every hidden layer the camera couldn't see.</div>
+      </div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <div class="step-title">AI asks one follow-up</div>
+        <div class="step-body">"Was the dressing on the side or mixed in?" The single most accurate question for your specific meal. Then it confirms out loud before logging.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VOICE SECTION -->
+<section class="voice-section" id="voice">
+  <div class="voice-inner">
+    <div class="voice-left">
+      <div class="section-eyebrow reveal">
+        <div class="section-line"></div>
+        <div class="section-tag">Key feature</div>
+      </div>
+      <h2 class="acc-h2 reveal">Just <em>talk.</em><br>We handle<br>the rest.</h2>
+      <p class="acc-body reveal">Hold the button. Describe your plate in plain English. NutriSnap understands portion sizes, hidden layers, cooking methods, and ingredients you can't even see — then reads back exactly what it logged before saving anything.</p>
+      <div class="voice-chips reveal">
+        <div class="voice-chip">"There's rice under all of this"</div>
+        <div class="voice-chip">"The dressing is mixed in"</div>
+        <div class="voice-chip">"Medium portion, no cheese"</div>
+        <div class="voice-chip">"Grilled not fried"</div>
+      </div>
+    </div>
+    <div class="voice-right">
+      <!-- Animated phone UI showing voice interaction -->
+      <div class="voice-phone">
+        <div class="vp-top">
+          <div class="vp-logo">NutriSnap</div>
+          <div class="vp-time">12:34</div>
+        </div>
+        <div class="vp-photo-stub">
+          <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80&auto=format&fit=crop" alt="food" style="width:100%;height:100%;object-fit:cover;display:block"/>
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(14,13,10,0.9))"></div>
+          <div class="vp-detected">
+            <div class="vp-det-label">Photo scan complete</div>
+            <div class="vp-det-items">
+              <span class="vp-item">Spinach</span>
+              <span class="vp-item">Chickpeas</span>
+              <span class="vp-item">Tomatoes</span>
+            </div>
+          </div>
+        </div>
+        <!-- Voice waveform area -->
+        <div class="vp-voice-area" id="vpVoice">
+          <div class="vp-ai-bubble">
+            <div class="vp-bubble-label">NutriSnap</div>
+            <div class="vp-bubble-text" id="vpBubble">I can see spinach, chickpeas, and tomatoes. What's underneath?</div>
+          </div>
+          <div class="vp-mic-area">
+            <div class="vp-waveform" id="vpWave">
+              <div class="wave-bar" style="animation-delay:0s"></div>
+              <div class="wave-bar" style="animation-delay:.08s"></div>
+              <div class="wave-bar" style="animation-delay:.16s"></div>
+              <div class="wave-bar" style="animation-delay:.24s"></div>
+              <div class="wave-bar" style="animation-delay:.32s"></div>
+              <div class="wave-bar" style="animation-delay:.40s"></div>
+              <div class="wave-bar" style="animation-delay:.48s"></div>
+              <div class="wave-bar" style="animation-delay:.56s"></div>
+              <div class="wave-bar" style="animation-delay:.64s"></div>
+            </div>
+            <div class="vp-hold">Hold to speak</div>
+          </div>
+        </div>
+        <!-- Confirmation state -->
+        <div class="vp-confirm" id="vpConfirm" style="display:none">
+          <div class="vp-confirm-label">Logging this meal —</div>
+          <div class="vp-confirm-items">
+            <div class="vp-ci">✓ Spinach &nbsp;<span>7 cal</span></div>
+            <div class="vp-ci">✓ Brown rice &nbsp;<span>218 cal</span></div>
+            <div class="vp-ci">✓ Chickpeas &nbsp;<span>134 cal</span></div>
+            <div class="vp-ci">✓ Tomatoes &nbsp;<span>22 cal</span></div>
+            <div class="vp-ci">✓ Tahini drizzle &nbsp;<span>89 cal</span></div>
+          </div>
+          <div class="vp-total">470 cal total</div>
+          <div class="vp-confirm-btns">
+            <button class="vp-btn-yes">Looks right ✓</button>
+            <button class="vp-btn-no">Edit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="feat-section" id="features">
+  <div class="feat-header reveal">
+    <h2 class="feat-h2">Everything you need.<br><em>Nothing you don't.</em></h2>
+    <p class="feat-header-sub">Built around the actual way people eat — at restaurants, cooking at home, grabbing something fast.</p>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-cell reveal">
+      <div class="feat-icon-wrap">📸</div>
+      <div class="feat-title">Photo detection</div>
+      <div class="feat-body">Instant identification of visible ingredients, cooking methods, and portion sizes from a single photo.</div>
+    </div>
+    <div class="feat-cell reveal">
+      <div class="feat-icon-wrap">🎤</div>
+      <div class="feat-title">Voice logging</div>
+      <div class="feat-body">Describe your meal naturally. Hidden layers, sauces mixed in, extras on the side — all counted.</div>
+    </div>
+    <div class="feat-cell reveal">
+      <div class="feat-icon-wrap">💬</div>
+      <div class="feat-title">Smart follow-up</div>
+      <div class="feat-body">One targeted question closes the accuracy gap between a guess and the real number.</div>
+    </div>
+    <div class="feat-cell reveal">
+      <div class="feat-icon-wrap">🌐</div>
+      <div class="feat-title">Restaurant lookup</div>
+      <div class="feat-body">Say where you are and what you ordered. NutriSnap pulls the real nutrition data from that menu.</div>
+    </div>
+    <div class="feat-cell reveal">
+      <div class="feat-icon-wrap">⌚</div>
+      <div class="feat-title">Wearable sync</div>
+      <div class="feat-body">Apple Watch, Whoop, Fitbit, Garmin. Your activity data adjusts your calorie targets in real time.</div>
+    </div>
+    <div class="feat-cell reveal">
+      <div class="feat-icon-wrap">🌙</div>
+      <div class="feat-title">Nightly review</div>
+      <div class="feat-body">Each evening NutriSnap walks your full day log with you, catching any errors before they compound.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="cta">
+  <div class="cta-left">
+    <h2 class="cta-left-h reveal">Stop<br>guessing.<br><em>Start knowing.</em></h2>
+    <p class="cta-left-sub reveal">Join the waitlist. First 500 get three months of Pro free — no card required.</p>
+  </div>
+  <div class="cta-right">
+    <div class="cta-label reveal">Get early access</div>
+    <div class="cta-input-row reveal">
+      <input type="email" class="cta-input" placeholder="your@email.com">
+      <button class="btn-submit">Join</button>
+    </div>
+    <p class="cta-note reveal">No spam. No card. Just early access and three months free when we launch.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="f-logo">NutriSnap</div>
+  <div class="f-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Press</a><a href="#">Contact</a></div>
+  <div class="f-copy">© 2026 NutriSnap Inc.</div>
+</footer>
+
+<script>
+function setMode(m) {
+  // Reset
+  ['scanRing1','scanRing2'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('sweepWrap').classList.remove('active');
+  document.getElementById('layerScan').classList.remove('active');
+  document.querySelectorAll('.ingredient-tag').forEach(el => el.classList.remove('show'));
+  document.querySelectorAll('.layer-band').forEach(el => el.classList.remove('lit'));
+  document.getElementById('heroImg').classList.remove('zoomed');
+  document.getElementById('explodePanel').classList.remove('active');
+  [0,1,2,3,4].forEach(i => {
+    const fl = document.getElementById('fl'+i);
+    if (!fl) return;
+    fl.classList.remove('pop');
+    fl.style.transform = '';
+  });
+  ['mf0','mf1','mf2','mf3'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = '0%';
+  });
+
+  if (m === 'scan') {
+    document.getElementById('heroImg').classList.add('zoomed');
+    ['scanRing1','scanRing2'].forEach(id => document.getElementById(id).classList.add('active'));
+    document.getElementById('sweepWrap').classList.add('active');
+    document.getElementById('layerScan').classList.add('active');
+    // Light up layer bands one by one
+    [0,1,2,3,4].forEach(i => {
+      setTimeout(() => {
+        document.getElementById('lb'+i).classList.add('lit');
+        // Show corresponding tag
+        const tagId = ['it0','it1','it2','it3','it4'][i];
+        const el = document.getElementById(tagId);
+        if (el) el.classList.add('show');
+      }, 600 + i * 500);
+    });
+    setTimeout(() => {
+      const el = document.getElementById('itTotal');
+      if (el) el.classList.add('show');
+    }, 600 + 5 * 500);
+  }
+
+  if (m === 'exploded') {
+    document.getElementById('explodePanel').classList.add('active');
+    // Reset left info
+    [0,1,2,3,4].forEach(i => {
+      const fi = document.getElementById('fi'+i);
+      const fc = document.getElementById('fc'+i);
+      if (fi) { fi.classList.remove('show'); }
+      if (fc) { fc.classList.remove('show'); }
+    });
+    const offsets = [0, 12, 26, 42, 60];
+    [0,1,2,3,4].forEach(i => {
+      setTimeout(() => {
+        const fl = document.getElementById('fl'+i);
+        if (!fl) return;
+        fl.style.transform = `translateY(-${offsets[i]}px)`;
+        fl.classList.add('pop');
+        // show corresponding left info
+        const fi = document.getElementById('fi'+i);
+        const fc = document.getElementById('fc'+i);
+        if (fi) fi.classList.add('show');
+        if (fc) fc.classList.add('show');
+      }, i * 110);
+    });
+    setTimeout(() => {
+      [38, 100, 32, 26].forEach((w, i) => {
+        const el = document.getElementById('mf'+i);
+        if (el) el.style.width = w + '%';
+      });
+    }, 700);
+  }
+}
+
+// Voice phone animation
+const bubbleStates = [
+  "I can see spinach, chickpeas, and tomatoes. What's underneath?",
+  "Got it — brown rice at the base and tahini mixed in. Was the dressing on the side or mixed through?",
+  "Mixed through — perfect. Let me confirm what I'm logging…"
+];
+let bubbleIdx = 0;
+function cycleBubble() {
+  const el = document.getElementById('vpBubble');
+  const voiceArea = document.getElementById('vpVoice');
+  const confirmArea = document.getElementById('vpConfirm');
+  if (!el) return;
+  if (bubbleIdx < bubbleStates.length - 1) {
+    el.style.opacity = '0';
+    setTimeout(() => { bubbleIdx++; el.textContent = bubbleStates[bubbleIdx]; el.style.opacity = '1'; }, 400);
+    setTimeout(cycleBubble, 3800);
+  } else {
+    setTimeout(() => {
+      voiceArea.style.opacity = '0';
+      setTimeout(() => {
+        voiceArea.style.display = 'none';
+        confirmArea.style.display = 'block';
+        confirmArea.style.opacity = '0';
+        setTimeout(() => { confirmArea.style.opacity = '1'; confirmArea.style.transition = 'opacity .4s'; }, 20);
+        setTimeout(() => {
+          confirmArea.style.opacity = '0';
+          setTimeout(() => {
+            confirmArea.style.display = 'none';
+            voiceArea.style.display = 'block';
+            voiceArea.style.opacity = '1';
+            bubbleIdx = 0;
+            el.textContent = bubbleStates[0];
+            setTimeout(cycleBubble, 3200);
+          }, 500);
+        }, 4500);
+      }, 400);
+    }, 1200);
+  }
+}
+setTimeout(cycleBubble, 3200);
+
+// Accuracy bars on scroll
+let barDone = false;
+new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting && !barDone) {
+      barDone = true;
+      setTimeout(() => { document.getElementById('barBad').style.width = '57%'; }, 200);
+      setTimeout(() => { document.getElementById('barGood').style.width = '100%'; }, 500);
+    }
+  });
+}, { threshold: 0.3 }).observe(document.getElementById('accuracy') || document.body);
+
+// Scroll reveal
+new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) setTimeout(() => e.target.classList.add('up'), i * 55);
+  });
+}, { threshold: 0.12 }).observe(document.body);
+document.querySelectorAll('.reveal').forEach(el => {
+  new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('up'); });
+  }, { threshold: 0.12 }).observe(el);
+});
+
+// Auto-loop: bowl → scan → explode → repeat
+function runLoop() {
+  setMode('combined');
+  setTimeout(() => setMode('scan'), 2000);
+  setTimeout(() => setMode('exploded'), 9000);
+  setTimeout(runLoop, 15000);
+}
+runLoop();
+</script>
+</body>
+</html>
